@@ -1,10 +1,34 @@
-require("dotenv").config();
+// ===================================
+// RENDER DEPLOYMENT FIXES: KEEP-ALIVE SERVER AND ENV VARS
+// ===================================
+const express = require('express');
+const app = express();
+const port = process.env.PORT || 3000; // Use Render's dynamically assigned PORT
+
+// Start an Express server for Render's required keep-alive function
+app.get('/', (req, res) => {
+    res.send('Elite Music Bot is alive!');
+});
+
+app.listen(port, () => {
+    console.log(`Render web server listening on port ${port}`);
+});
+
+// ===================================
+// ORIGINAL BOT CODE (MODIFIED)
+// ===================================
+
+// ** 🛑 REMOVED: require("dotenv").config(); 🛑 **
+// The configuration is now loaded directly from process.env provided by Render.
+
 const fs = require("fs");
 const { REST } = require("@discordjs/rest");
 const { Client, GatewayIntentBits, Partials, Collection, Routes } = require("discord.js");
 const { Player } = require('discord-player');
 const { DefaultExtractors } = require('@discord-player/extractor');
 const { YoutubeiExtractor } = require('discord-player-youtubei');
+
+// Client initialization remains the same
 client = new Client({
     intents: [ //Sets the necessary intents which discord requires
         GatewayIntentBits.Guilds,
@@ -66,6 +90,7 @@ fs.readdirSync("./commands/").forEach((dir) => {
 //Register all of the commands
 client.once('ready', async function() {
     console.log(`[ELITE_CONFIG] Loading Configuration... (Config Version: ${process.env.CFG_VERSION || 'N/A'})`)
+    // Ensure you use the correct variable name for the token here (process.env.TOKEN)
     const rest = new REST({ version: "10" }).setToken(process.env.TOKEN);
 
     try {
@@ -86,18 +111,24 @@ for (const file of eventFiles) { //For each file, check if the event is .once or
     }
 }
 
-//Authenticate with Discord via .env passed token
+//Authenticate with Discord via environment token
 if (!process.env.TOKEN) {
-    console.log(`[ELITE_ERROR] The .env file could not be found/doesn't exist. Have you followed the setup instructions correctly (https://github.com/ThatGuyJacobee/Elite-Music) to ensure that you have configured your environment correctly?`)
+    // ** ⚠️ MODIFIED: Removed the misleading .env file mention from the error message. ⚠️ **
+    console.log(`[ELITE_ERROR] The Discord bot token is missing. Please ensure the 'TOKEN' environment variable is set correctly on the Render dashboard.`);
     process.exit(0)
 }
 
+// Login using the token from Render's environment variables
 client.login(process.env.TOKEN)
 .catch((err) => {
-    console.log(`[ELITE_ERROR] Bot could not login and authenticate with Discord. Have you populated your .env file with your bot token and copied it over correctly? (Using token: ${process.env.TOKEN})\nError Trace: ${err}`);
+    // ** ⚠️ MODIFIED: Removed the misleading .env file mention from the error message. ⚠️ **
+    console.log(`[ELITE_ERROR] Bot could not login and authenticate with Discord. 
+        Please check the 'TOKEN' environment variable on Render's dashboard. 
+        (Using token starting with: ${process.env.TOKEN ? process.env.TOKEN.substring(0, 5) + '...' : 'N/A'})
+        Error Trace: ${err}`);
 })
 
-//Verbose logging for debugging purposes
+//Verbose logging for debugging purposes (Remains the same)
 const verbose = process.env.VERBOSE ? process.env.VERBOSE.toLocaleLowerCase() : "none";
 if (verbose == "full" || verbose == "normal") {
     //Both normal and full verbose logging will log unhandled rejects, uncaught exceptions and warnings to the console
